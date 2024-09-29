@@ -65,10 +65,10 @@ endif
 	$(info Building bbs-fw for $(TARGET_CONTROLLER))
 
 hex:
-	@cmd /C tohex.bat
+	@./tohex.sh
 	
 clean:
-	@cmd /C clean.bat
+	@./clean.sh
 	$(info Clean Finished)
 
 .PHONY = all hex clean precheck echo
