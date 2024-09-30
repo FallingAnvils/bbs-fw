@@ -22,6 +22,7 @@
 void system_init();
 
 uint32_t system_ms();
+uint32_t system_x100us();
 void system_delay_ms(uint16_t ms);
 
 #endif

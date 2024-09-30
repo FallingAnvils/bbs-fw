@@ -13,6 +13,7 @@
 
 static volatile uint32_t	_ms;
 static volatile uint8_t		_x100us;
+static volatile uint32_t        _x100us_cum;
 
 void system_init()
 {
@@ -38,6 +39,17 @@ uint32_t system_ms()
 	return val;
 }
 
+// I have no idea what I'm doing!
+// it might be safe to use this?
+uint32_t system_x100us() {
+	uint32_t val;
+	uint8_t et0 = ET0;
+	ET0 = 0;
+	val = _x100us_cum;
+	ET0 = et0;
+	return val;
+}
+
 void system_delay_ms(uint16_t ms)
 {
 	if (!ms)
@@ -56,6 +68,7 @@ void system_delay_ms(uint16_t ms)
 #pragma nooverlay // See SDCC manual about function calls in ISR
 void system_timer0_isr()
 {
+	_x100us_cum++;
 	_x100us++;
 	if (_x100us == 10)
 	{

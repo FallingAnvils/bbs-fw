@@ -17,6 +17,7 @@
 #include "eventlog.h"
 #include "util.h"
 #include "system.h"
+#include "pid.h"
 
 
 typedef struct
@@ -516,6 +517,23 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 {
 	static bool speed_limiting = false;
 
+	static int32_t pid_integral = 0;
+	static int16_t pid_last_error = 0;
+	static uint32_t last_time = 0;
+
+
+	static bool cruise_just_unpaused = false;
+
+	if(!cruise_just_unpaused && !cruise_paused) {
+		cruise_just_unpaused = true;
+		last_time = system_x100us();
+	}
+	if(cruise_paused) cruise_just_unpaused = false;
+	if(last_time == 0) { 
+		last_time = system_x100us();
+	}
+       		
+
 	if (!g_config.use_speed_sensor)
 	{
 		return false;
@@ -554,8 +572,41 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 	int32_t max_speed_ramp_low_rpm_x10 = max_speed_rpm_x10 - speed_limit_ramp_interval_rpm_x10;
 	int32_t max_speed_ramp_high_rpm_x10 = max_speed_rpm_x10 + speed_limit_ramp_interval_rpm_x10;
 
-	if (max_speed_rpm_x10 > 0)
+	static bool said_stuff = false;
+
+	static int16_t say_stuff_interval = 0;
+
+	if (max_speed_rpm_x10 > 0 && !cruise_paused)
 	{
+
+		if(!said_stuff) {
+		
+			eventlog_write_data(EVT_DATA_VOLTAGE, max_speed_rpm_x10);
+
+			said_stuff = true;
+		}
+		
+
+		int16_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
+
+		
+		// the speed limit is now a target speed!
+		*target_current = pid_process_get_current_percent(current_speed_rpm_x10, max_speed_rpm_x10, &pid_integral, &pid_last_error, &last_time);
+
+		if(say_stuff_interval-- < 0) {
+			say_stuff_interval = 100;
+
+			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, pid_integral);	
+			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, pid_integral >> 16);
+			
+			if(pid_integral < 0) eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, 12345);
+			if(pid_last_error < 0) eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, 54321);
+
+
+			
+		}
+
+	/*
 		int16_t current_speed_rpm_x10 = speed_sensor_get_rpm_x10();
 
 		if (current_speed_rpm_x10 < max_speed_ramp_low_rpm_x10)
@@ -593,7 +644,7 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 					return true;
 				}
 			}
-		}
+		}*/
 	}
 
 	return false;
