@@ -472,6 +472,57 @@ namespace BBSFW.ViewModel
 			}
 		}
 
+		public float CruiseKp
+		{
+			get { return _config.CruiseKp; }
+			set
+			{
+				if (_config.CruiseKp != value)
+				{
+					_config.CruiseKp = value;
+					OnPropertyChanged(nameof(CruiseKp));
+				}
+			}
+		}
+
+		public uint CruiseKiDenom
+		{
+			get { return _config.CruiseKiDenom; }
+			set
+			{
+				if (_config.CruiseKiDenom != value)
+				{
+					_config.CruiseKiDenom = value;
+					OnPropertyChanged(nameof(CruiseKiDenom));
+				}
+			}
+		}
+
+		public float CruiseKd
+		{
+			get { return _config.CruiseKd; }
+			set
+			{
+				if (_config.CruiseKd != value)
+				{
+					_config.CruiseKd = value;
+					OnPropertyChanged(nameof(CruiseKd));
+				}
+			}
+		}
+
+		public float CruiseMult
+		{
+			get { return _config.CruiseMult; }
+			set
+			{
+				if (_config.CruiseMult != value)
+				{
+					_config.CruiseMult = value;
+					OnPropertyChanged(nameof(CruiseMult));
+				}
+			}
+		}
 
 		public uint StartupAssistLevel
 		{

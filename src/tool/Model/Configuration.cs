@@ -19,6 +19,7 @@ namespace BBSFW.Model
 		public const int ByteSizeV2 = 124;
 		public const int ByteSizeV3 = 149;
 		public const int ByteSizeV4 = 152;
+		public const int ByteSizeV5 = 160;
 
 		public enum Feature
 		{
@@ -41,6 +42,8 @@ namespace BBSFW.Model
 					return ByteSizeV3;
 				case 4:
 					return ByteSizeV4;
+				case 5:
+					return ByteSizeV5;
 			}
 
 			return 0;
@@ -197,6 +200,11 @@ namespace BBSFW.Model
 		// misc
 		public WalkModeData WalkModeDataDisplay;
 
+		public float CruiseKp;
+		public uint CruiseKiDenom;
+		public float CruiseKd;
+		public float CruiseMult;
+
 		// assists options
 		public AssistModeSelect AssistModeSelection;
 		public uint AssistStartupLevel;
@@ -244,6 +252,11 @@ namespace BBSFW.Model
 			ShiftInterruptCurrentThresholdPercent = 0;
 
 			WalkModeDataDisplay = WalkModeData.Speed;
+
+			CruiseKp = 0;
+			CruiseKiDenom = 0;
+			CruiseKd = 0;
+			CruiseMult = 0;
 
 			AssistModeSelection = AssistModeSelect.Off;
 			AssistStartupLevel = 0;
@@ -569,6 +582,83 @@ namespace BBSFW.Model
 			return true;
 		}
 
+		public bool ParseFromBufferV5(byte[] buffer)
+		{
+			if (buffer.Length != ByteSizeV5)
+			{
+				return false;
+			}
+
+			using (var s = new MemoryStream(buffer))
+			{
+				var br = new BinaryReader(s);
+
+				UseFreedomUnits = br.ReadBoolean();
+
+				MaxCurrentAmps = br.ReadByte();
+				CurrentRampAmpsSecond = br.ReadByte();
+				MaxBatteryVolts = br.ReadUInt16() / 100f;
+				LowCutoffVolts = br.ReadByte();
+				MaxSpeedKph = br.ReadByte();
+
+				UseSpeedSensor = br.ReadBoolean();
+				UseShiftSensor = br.ReadBoolean();
+				UsePushWalk = br.ReadBoolean();
+				UseTemperatureSensor = (TemperatureSensor)br.ReadByte();
+
+				LightsMode = (LightsModeOptions)br.ReadByte();
+
+				WheelSizeInch = br.ReadUInt16() / 10f;
+				NumWheelSensorSignals = br.ReadByte();
+
+				PasStartDelayPulses = br.ReadByte();
+				PasStopDelayMilliseconds = br.ReadByte() * 10u;
+				PasKeepCurrentPercent = br.ReadByte();
+				PasKeepCurrentCadenceRpm = br.ReadByte();
+
+				ThrottleStartMillivolts = br.ReadUInt16();
+				ThrottleEndMillivolts = br.ReadUInt16();
+				ThrottleStartPercent = br.ReadByte();
+				ThrottleGlobalSpeedLimit = (ThrottleGlobalSpeedLimitOptions)br.ReadByte();
+				ThrottleGlobalSpeedLimitPercent = br.ReadByte();
+
+				ShiftInterruptDuration = br.ReadUInt16();
+				ShiftInterruptCurrentThresholdPercent = br.ReadByte();
+
+				WalkModeDataDisplay = (WalkModeData)br.ReadByte();
+
+				CruiseKp = br.ReadUInt16() / 1000.0f;
+				CruiseKiDenom = br.ReadUInt16();
+				CruiseKd = br.ReadUInt16() / 1000.0f;
+				CruiseMult = br.ReadUInt16() / 1000.0f;
+
+				AssistModeSelection = (AssistModeSelect)br.ReadByte();
+				AssistStartupLevel = br.ReadByte();
+
+				for (int i = 0; i < StandardAssistLevels.Length; ++i)
+				{
+					StandardAssistLevels[i].Type = (AssistFlagsType)br.ReadByte();
+					StandardAssistLevels[i].MaxCurrentPercent = br.ReadByte();
+					StandardAssistLevels[i].MaxThrottlePercent = br.ReadByte();
+					StandardAssistLevels[i].MaxCadencePercent = br.ReadByte();
+					StandardAssistLevels[i].MaxSpeedPercent = br.ReadByte();
+					StandardAssistLevels[i].TorqueAmplificationFactor = br.ReadByte() / 10f;
+				}
+
+				for (int i = 0; i < SportAssistLevels.Length; ++i)
+				{
+					SportAssistLevels[i].Type = (AssistFlagsType)br.ReadByte();
+					SportAssistLevels[i].MaxCurrentPercent = br.ReadByte();
+					SportAssistLevels[i].MaxThrottlePercent = br.ReadByte();
+					SportAssistLevels[i].MaxCadencePercent = br.ReadByte();
+					SportAssistLevels[i].MaxSpeedPercent = br.ReadByte();
+					SportAssistLevels[i].TorqueAmplificationFactor = br.ReadByte() / 10f;
+				}
+			}
+
+			return true;
+		}
+
 
 		public byte[] WriteToBuffer()
 		{
@@ -609,6 +699,11 @@ namespace BBSFW.Model
 				bw.Write((byte)ShiftInterruptCurrentThresholdPercent);
 
 				bw.Write((byte)WalkModeDataDisplay);
+
+				bw.Write((UInt16)(CruiseKp * 1000));
+				bw.Write((UInt16)CruiseKiDenom);
+				bw.Write((UInt16)(CruiseKd * 1000));
+				bw.Write((UInt16)(CruiseMult * 1000));
 
 				bw.Write((byte)AssistModeSelection);
 				bw.Write((byte)AssistStartupLevel);
@@ -666,6 +761,10 @@ namespace BBSFW.Model
 			ShiftInterruptDuration = cfg.ShiftInterruptDuration;
 			ShiftInterruptCurrentThresholdPercent = cfg.ShiftInterruptCurrentThresholdPercent;
 			WalkModeDataDisplay = cfg.WalkModeDataDisplay;
+			CruiseKp = cfg.CruiseKp;
+			CruiseKiDenom = cfg.CruiseKiDenom;
+			CruiseKd = cfg.CruiseKd;
+			CruiseMult = cfg.CruiseMult;
 			AssistModeSelection = cfg.AssistModeSelection;
 			AssistStartupLevel = cfg.AssistStartupLevel;
 
@@ -735,6 +834,11 @@ namespace BBSFW.Model
 			ValidateLimits(ShiftInterruptDuration, 50, 2000, "Shift Interrupt Duration (ms)");
 			ValidateLimits(ShiftInterruptCurrentThresholdPercent, 0, 100, "Shift Interrupt Current Threshold (%)");
 
+			ValidateLimits(CruiseKp, 0.001f, 65.5f, "Cruise Kp");
+			ValidateLimits(CruiseKiDenom, 1, 65535, "Cruise Ki Denominator");
+			ValidateLimits(CruiseKd, 0.001f, 65.5f, "Cruise Kd");
+			ValidateLimits(CruiseMult, 0.001f, 65.5f, "Cruise Multiplier");
+
 			ValidateLimits(AssistStartupLevel, 0, 9, "Assist Startup Level");
 
 			for (int i = 0; i < StandardAssistLevels.Length; ++i)
@@ -760,6 +864,13 @@ namespace BBSFW.Model
 		private void ValidateLimits(uint value, uint min, uint max, string name)
 		{
 			if (value < min || value > max)
+			{
+				throw new Exception(name + " must be in interval " + min + "-" + max + ".");
+			}
+		}
+
+		private void ValidateLimits(float value, float min, float max, string name) {
+			if(value < min || value > max)
 			{
 				throw new Exception(name + " must be in interval " + min + "-" + max + ".");
 			}
