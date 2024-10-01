@@ -192,6 +192,18 @@ static void load_default_config()
 
 	g_config.walk_mode_data_display = WALK_MODE_DATA_SPEED;
 
+	g_config.cruise_kp_x1000_u16l = (uint8_t)420;
+	g_config.cruise_kp_x1000_u16h = (uint8_t)(420 >> 8);
+
+	g_config.cruise_ki_denom_u16l = (uint8_t)750;
+	g_config.cruise_ki_denom_u16h = (uint8_t)(750 >> 8);
+
+	g_config.cruise_kd_x1000_u16l = (uint8_t)400;
+	g_config.cruise_kd_x1000_u16h = (uint8_t)(400 >> 8);
+
+	g_config.cruise_mult_x1000_u16l = (uint8_t)1000;
+	g_config.cruise_mult_x1000_u16h = (uint8_t)(1000 >> 8);
+
 	g_config.assist_mode_select = ASSIST_MODE_SELECT_OFF;
 	g_config.assist_startup_level = 3;
 

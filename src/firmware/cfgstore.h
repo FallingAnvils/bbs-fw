@@ -54,7 +54,7 @@
 #define LIGHTS_MODE_ALWAYS_ON			2
 #define LIGHTS_MODE_BRAKE_LIGHT			3
 
-#define CONFIG_VERSION					4
+#define CONFIG_VERSION					5
 #define PSTATE_VERSION					1
 
 
@@ -118,6 +118,18 @@ typedef struct
 
 	// misc
 	uint8_t walk_mode_data_display;
+
+	uint8_t cruise_kp_x1000_u16l;
+	uint8_t cruise_kp_x1000_u16h;
+
+	uint8_t cruise_ki_denom_u16l;
+	uint8_t cruise_ki_denom_u16h;
+
+	uint8_t cruise_kd_x1000_u16l;
+	uint8_t cruise_kd_x1000_u16h;
+
+	uint8_t cruise_mult_x1000_u16l;
+	uint8_t cruise_mult_x1000_u16h;
 
 	// assist levels
 	uint8_t assist_mode_select;

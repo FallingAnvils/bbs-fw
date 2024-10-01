@@ -78,6 +78,9 @@ void reload_assist_params();
 
 uint16_t convert_wheel_speed_kph_to_rpm(uint8_t speed_kph);
 
+pid_consts_t pid_consts;
+pid_vars_t pid_vars;
+
 void app_init()
 {
 	motor_disable();
@@ -117,6 +120,20 @@ void app_init()
 	{
 		app_set_operation_mode(OPERATION_MODE_SPORT);
 	}
+
+	uint16_t kp_x1000, ki_denom, kd_x1000, mult_x1000;
+
+	kp_x1000 = EXPAND_U16(g_config.cruise_kp_x1000_u16h, g_config.cruise_kp_x1000_u16l);
+	ki_denom = EXPAND_U16(g_config.cruise_ki_denom_u16h, g_config.cruise_ki_denom_u16l);
+	kd_x1000 = EXPAND_U16(g_config.cruise_kd_x1000_u16h, g_config.cruise_kd_x1000_u16l);
+	mult_x1000 = EXPAND_U16(g_config.cruise_mult_x1000_u16h, g_config.cruise_mult_x1000_u16l);
+
+	pid_load_consts(kp_x1000, ki_denom, kd_x1000, mult_x1000, &pid_consts);
+
+	pid_vars.integral = 0;
+	pid_vars.last_error = 0;
+	pid_vars.last_time = 0;
+
 }
 
 void app_process()
@@ -517,20 +534,15 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 {
 	static bool speed_limiting = false;
 
-	static int32_t pid_integral = 0;
-	static int16_t pid_last_error = 0;
-	static uint32_t last_time = 0;
-
-
 	static bool cruise_just_unpaused = false;
 
 	if(!cruise_just_unpaused && !cruise_paused) {
 		cruise_just_unpaused = true;
-		last_time = system_x100us();
+		pid_vars.last_time = system_x100us();
 	}
 	if(cruise_paused) cruise_just_unpaused = false;
-	if(last_time == 0) { 
-		last_time = system_x100us();
+	if(pid_vars.last_time == 0) { 
+		pid_vars.last_time = system_x100us();
 	}
        		
 
@@ -591,16 +603,21 @@ bool apply_speed_limit(uint8_t* target_current, uint8_t throttle_percent, bool t
 
 		
 		// the speed limit is now a target speed!
-		*target_current = pid_process_get_current_percent(current_speed_rpm_x10, max_speed_rpm_x10, &pid_integral, &pid_last_error, &last_time);
+		*target_current = pid_process_get_current_percent(current_speed_rpm_x10, max_speed_rpm_x10, &pid_consts, &pid_vars);
 
 		if(say_stuff_interval-- < 0) {
 			say_stuff_interval = 100;
 
-			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, pid_integral);	
-			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, pid_integral >> 16);
+			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, pid_vars.integral);	
+			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, pid_vars.integral >> 16);
 			
-			if(pid_integral < 0) eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, 12345);
-			if(pid_last_error < 0) eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, 54321);
+			if(pid_vars.integral < 0) eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, 12345);
+			if(pid_vars.last_error < 0) eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, 54321);
+
+			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, pid_consts.kp * 1000);
+			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, 1.f / pid_consts.ki);
+			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, pid_consts.kd * 1000);
+			eventlog_write_data(EVT_DATA_WHEEL_SPEED_PPM, pid_consts.k * 1000);
 
 
 			
