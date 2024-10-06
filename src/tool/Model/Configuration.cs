@@ -11,7 +11,7 @@ namespace BBSFW.Model
 	[XmlRoot("BBSFW", Namespace ="https://github.com/danielnilsson9/bbs-fw")]
 	public class Configuration
 	{
-		public const int CurrentVersion = 4;
+		public const int CurrentVersion = 5;
 		public const int MinVersion = 1;
 		public const int MaxVersion = CurrentVersion;
 

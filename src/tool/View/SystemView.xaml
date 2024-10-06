@@ -4,13 +4,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:BBSFW.View"
-             mc:Ignorable="d" d:DesignWidth="850" Height="555">
+             mc:Ignorable="d" d:DesignWidth="850" Height="539">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </UserControl.Resources>
 
-    <Grid Margin="0,0,0,27">
+    <Grid Margin="0,0,0,10">
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
